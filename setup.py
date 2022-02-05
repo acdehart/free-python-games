@@ -45,7 +45,7 @@ st.setup(
         'Source': 'https://github.com/grantjenks/free-python-games',
         'Tracker': 'https://github.com/grantjenks/free-python-games/issues',
     },
-    classifiers=(
+    classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Education',
         'Intended Audience :: End Users/Desktop',
@@ -66,5 +66,5 @@ st.setup(
         'Topic :: Games/Entertainment :: Side-Scrolling/Arcade Games',
         'Topic :: Games/Entertainment :: Simulation',
         'Topic :: Games/Entertainment :: Turn Based Strategy',
-    ),
+    ],
 )
