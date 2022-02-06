@@ -54,6 +54,7 @@ class game:
     def __init__(self, number_of_players):
         self.verbose = True
         self.damage = False
+        self.ding = False
         self.num_of_players = number_of_players
         self.step_count = 0
         setup(x_window, y_window, 1*370, 200)
@@ -125,8 +126,8 @@ class game:
 
     def move(self, id, dx, dy):
         self.player_cells[self.players[id].pos[0], self.players[id].pos[1]] = False
-        self.players[id].pos[0] = min(max(-x_field, self.players[id].pos[0] + dx * cell_size), x_field - 1 * cell_size)
-        self.players[id].pos[1] = min(max(-y_field, self.players[id].pos[1] - dy * cell_size), y_field - 1 * cell_size)
+        self.players[id].pos[0] = min(max(-x_field+1*cell_size, self.players[id].pos[0] + dx * cell_size), x_field - 2 * cell_size)
+        self.players[id].pos[1] = min(max(-y_field+1*cell_size, self.players[id].pos[1] - dy * cell_size), y_field - 2 * cell_size)
         self.player_cells[self.players[id].pos[0], self.players[id].pos[1]] = True
 
     def step(self):
@@ -138,15 +139,19 @@ class game:
             if not self.players[1].alive:
                 game_over = True
         else:
+            if not self.players[1].alive and self.players[2].score > self.players[1].score:
+                game_over = True
+            if not self.players[2].alive and self.players[2].score < self.players[1].score:
+                game_over = True
             if not self.players[1].alive and not self.players[2].alive:
                 game_over = True
 
-        for x in range(-190, 190, cell_size):
-            for y in range(-190, 190, cell_size):
+        for x in range(-x_field+10, x_field-10, cell_size):
+            for y in range(-y_field+10, y_field-10, cell_size):
                 count = -self.cells[x, y]
                 self.burst_cells[x, y] = False
-                for h in [-10, 0, cell_size]:
-                    for v in [-10, 0, cell_size]:
+                for h in [-cell_size, 0, cell_size]:
+                    for v in [-cell_size, 0, cell_size]:
                         count += self.cells[x + h, y + v]
                 neighbors[x, y] = count
 
@@ -214,6 +219,7 @@ class game:
             for id in self.players:
                 if self.players[id].alive:
                     self.players[id].score += 1
+            beep.beep(1)
             print(f"Step {self.step_count}")
 
         live_game = self.step()
@@ -232,6 +238,11 @@ class game:
                     square(x, y, cell_size, self.players[id].color)
                     if alive:
                         self.players[id].score += 1
+                        self.ding = True
+
+        if self.ding:
+            self.ding = False
+            beep.beep(1)
 
         """Set Characters"""
 
@@ -245,7 +256,7 @@ class game:
         if not live_game:
             beep.beep(5)
             if len(self.players) == 1:
-                tkinter.messagebox.showerror("Game Over!", f"Good Job!\nScore {self.players[1].score}")
+                tkinter.messagebox.showinfo("Game Over!", f"Good Job!\nScore {self.players[1].score}")
             else:
                 if self.players[1].score > self.players[2].score:
                     tkinter.messagebox.showinfo("Game Over!", f"Blue Wins!\nScore {self.players[1].score}")
