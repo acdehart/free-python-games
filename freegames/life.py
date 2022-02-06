@@ -10,6 +10,8 @@ Exercises
 3. How would you modify the initial state?
 4. Try changing the rules of life :)
 """
+from threading import Thread
+
 import beepy as beep
 import os
 import winsound
@@ -51,8 +53,9 @@ class player:
 
 
 class game:
-    def __init__(self, number_of_players):
-        self.verbose = True
+    def __init__(self, number_of_players, verbose):
+        self.verbose = verbose
+        self.living = True
         self.damage = False
         self.ding = False
         self.num_of_players = number_of_players
@@ -61,17 +64,19 @@ class game:
         # speed(1)
         hideturtle()
         tracer(False)
-        square(-150, -10, cell_size, 'white')
+        square(-210, -10, cell_size, 'white')
         color('Black')
-        write(f"Game of Life", font=('Arial', 40, 'bold'))
+        write(f"LAVA-Journalism", font=('Arial', 40, 'bold'))
         self.players = {}
         self.cells = {}
         self.player_cells = {}
+        self.border_cells = {}
         self.burst_cells = {}
         self.initialize()
 
         if self.verbose:
-            beep.beep(1)
+            b = Thread(beep.beep(2))
+            b.start()
         # frequency = 2500  # Set Frequency To 2500 Hertz
         # duration = 1000  # Set Duration To 1000 ms == 1 second
         # winsound.Beep(frequency, duration)
@@ -83,6 +88,10 @@ class game:
                 self.cells[x, y] = False
                 self.player_cells[x, y] = False
                 self.burst_cells[x, y] = False
+                self.border_cells[x,y] = False
+                if x == abs(x_field-10) or y == abs(y_field-10) or \
+                        x == -x_field or y == -y_field:
+                    self.border_cells[x, y] = True
 
         for id in range(1, self.num_of_players + 1):
             self.players[id] = player(id)
@@ -125,7 +134,8 @@ class game:
         self.cells[(x + cell_size, y + cell_size)] = True
 
     def move(self, id, dx, dy):
-        self.player_cells[self.players[id].pos[0], self.players[id].pos[1]] = False
+        if self.players[id % 2+1].pos != self.players[id].pos:
+            self.player_cells[self.players[id].pos[0], self.players[id].pos[1]] = False
         self.players[id].pos[0] = min(max(-x_field+1*cell_size, self.players[id].pos[0] + dx * cell_size), x_field - 2 * cell_size)
         self.players[id].pos[1] = min(max(-y_field+1*cell_size, self.players[id].pos[1] - dy * cell_size), y_field - 2 * cell_size)
         self.player_cells[self.players[id].pos[0], self.players[id].pos[1]] = True
@@ -163,17 +173,19 @@ class game:
                     for id in self.players:
                         if self.player_cells[cell]:
                             if list(cell) == self.players[id].pos and self.players[id].alive:
+                                """Player Loses Life"""
                                 self.damage = True
+                                self.burst_cells[(self.players[id].pos[0], self.players[id].pos[1]+1)] = True
+                                self.burst_cells[(self.players[id].pos[0]+1, self.players[id].pos[1])] = True
+                                self.burst_cells[(self.players[id].pos[0], self.players[id].pos[1])] = True
+                                self.burst_cells[(self.players[id].pos[0], self.players[id].pos[1]-1)] = True
+                                self.burst_cells[(self.players[id].pos[0]-1, self.players[id].pos[1])] = True
                                 if self.players[id].lives:
                                     self.players[id].lives = self.players[id].lives[:-1]
                                 else:
                                     self.players[id].alive = False
+                                self.player_cells[cell] = False
                                 print(f"Player {id} | {self.players[id].lives} with score {self.players[id].score}")
-
-                    #     print("GAME OVER")
-                    #     print(f"SORE {self.step_count}")
-                    #     game_over = True
-
             elif count == 3:
                 self.cells[cell] = True
 
@@ -188,6 +200,7 @@ class game:
                                  random.choice([-y_garden-60, 0, y_garden+60]))
 
         if game_over:
+            self.living = False
             self.close()
             return False
         return True
@@ -196,14 +209,9 @@ class game:
         """Display `text` at coordinates `x` and `y`."""
 
         for id in self.players:
-            square(self.players[id].text[0], self.players[id].text[1], cell_size, 'white')
+            square(self.players[id].text[0], self.players[id].text[1], 0, 'white')
             color(self.players[id].color)
             write(f"Score {self.players[id].score}\nLives {self.players[id].lives}", font=('Arial', 20, 'normal'))
-        #
-        # if player_number == 2:
-        #     square(x_window / 2 - 80, y_window/2-60, 10, 'white')
-        #     color('Orange')
-        #     write(f"Score {self.player_2_score}\nLives {self.player_2_lives}", font=('Arial', 20, 'normal'))
 
     def randomize_patch(self, x_patch=0, y_patch=0):
         for x in range(-x_garden, x_garden, cell_size):
@@ -211,27 +219,35 @@ class game:
                 self.cells[x + x_patch, y - y_patch] = choice([True, False])
 
     def draw(self):
-
         """Draw all the squares."""
         self.step_count += 1
 
         if self.step_count % 10 == 0:
             for id in self.players:
-                if self.players[id].alive:
+                if self.players[id].alive and self.player_cells[tuple(self.players[id].pos)]:
                     self.players[id].score += 1
-            beep.beep(1)
+                    self.ding = True
+            if self.verbose and self.ding:
+                self.ding = False
+                pass_go_beep = Thread(target=beep.beep(1))
+                pass_go_beep.start()
+
             print(f"Step {self.step_count}")
 
         live_game = self.step()
         clear()
 
         for (x, y), alive in self.cells.items():
-            if self.burst_cells[(x, y)]:
-                square(x, y, cell_size, 'red')
+            # if self.burst_cells[(x, y)] and not self.player_cells[tuple(self.players[id].pos)]:
+            #     self.player_cells[tuple(self.players[1].pos)] = True
+            #     self.player_cells[tuple(self.players[2].pos)] = True
+            #     square(x, y, cell_size, 'green')
+            if self.burst_cells[(x, y)] or self.border_cells[(x, y)]:
+                square(x, y, cell_size, 'darkred')
             elif alive:
-                square(x, y, cell_size, 'green')
+                square(x, y, cell_size, 'grey')
             else:
-                square(x, y, cell_size, 'black')
+                square(x, y, cell_size, 'darkgrey')
 
             for id in self.players:
                 if self.player_cells[(x, y)] and [x, y] == self.players[id].pos and self.players[id].alive:
@@ -240,21 +256,26 @@ class game:
                         self.players[id].score += 1
                         self.ding = True
 
-        if self.ding:
+        if self.verbose and self.ding:
             self.ding = False
-            beep.beep(1)
+            points_beep = Thread(target=beep.beep(1))
+            points_beep.start()
 
         """Set Characters"""
 
         self.report_scores()
         if self.verbose and self.damage:
             self.damage = False
-            beep.beep(3)
+            damage_beep = Thread(target=beep.beep(3))
+            damage_beep.start()
 
         update()
 
         if not live_game:
-            beep.beep(5)
+
+            if self.verbose:
+                end_beep = Thread(target=beep.beep(5))
+                end_beep.start()
             if len(self.players) == 1:
                 tkinter.messagebox.showinfo("Game Over!", f"Good Job!\nScore {self.players[1].score}")
             else:
@@ -269,7 +290,7 @@ class game:
         ontimer(self.draw(), 100)
 
 
-def setup_keys():
+def setup_keys(game):
     listen()
     onkey(lambda: game.move(1, 0, -1), 'w')
     onkey(lambda: game.move(1, 0, 1), 's')
@@ -280,17 +301,19 @@ def setup_keys():
     onkey(lambda: game.move(2, -1, 0), 'Left')
     onkey(lambda: game.move(2, 1, 0), 'Right')
     onkey(lambda: game.close(), 'Escape')
-
+    return game
 
 if __name__ == "__main__":
-    living_game = True
 
-    game = game(2)
+    game1 = game(number_of_players=2, verbose=True)
 
-    setup_keys()
+    game1 = setup_keys(game1)
 
-    while living_game:
+    while game1.living:
 
-        if not game.draw():
-            break
+        if not game1.draw():
+            game1 = None
+            game1 = game(number_of_players=2, verbose=True)
+            game1 = setup_keys(game1)
+
     done()
