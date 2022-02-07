@@ -10,10 +10,13 @@ Exercises
 3. How would you modify the initial state?
 4. Try changing the rules of life :)
 """
+import pickle
+
 RADIUS = 1
 PLAYERS = 2
 VERBOSE = False
-PLAYER_WINERS = []
+PLAYER_WINNERS = []
+PKL_PATH = 'gladiators.pkl'
 
 from threading import Thread
 import beepy as beep
@@ -40,7 +43,7 @@ cell_size = 10
 
 def count_wins(color):
     color_wins = 0
-    for player in PLAYER_WINERS:
+    for player in PLAYER_WINNERS:
         if player.color == color:
             color_wins += 1
     return color_wins
@@ -59,11 +62,16 @@ class player:
             self.color = 'blue'
             self.pos = [-100, -100]
             self.text = [-320, 110]
+            self.weights = [.9, .1, .1, .1, .1]
 
         if id == 2:
             self.color = 'orange'
             self.pos = [100, 100]
             self.text = [208, 110]
+            self.weights = [.2, .2, .2, .2, .2]
+
+    def get_intuition(self):
+        return self.weights
 
     def remember_valhala(self, points, env, env_1):
         """Convert env to local 1/0 in a list associated with env"""
@@ -74,7 +82,7 @@ class player:
         if RADIUS == 1:
             for x in range(self.pos[0]-1*cell_size, self.pos[0]+2*cell_size, 10):
                 for y in range(self.pos[1]-1*cell_size, self.pos[1]+2*cell_size, 10):
-                    feature_list.append(int(env[(x, y)] or env_1[(x, y)])*points)
+                    feature_list.append(int(env_1[(x, y)])*points)
         self.memory[tuple(feature_list)] = self.prev_decission
 
 
@@ -235,8 +243,15 @@ class game:
             self.randomize_patch(random.choice([-x_garden - 60, 0, x_garden + 60]),
                                  random.choice([-y_garden - 60, 0, y_garden + 60]))
 
+    def move_player_from_runes(self, id):
+        """With PLAYER_WINNERS"""
+        """Train system of nodes & weights"""
+        """Feed new env to agent and get decision"""
+        pass
+
     def move_player_random_direction(self, id):
-        self.players[id].decission = random.choice([None, 'w', 's', 'a', 'd'])
+        self.players[id].weights = self.players[id].get_intuition()
+        self.players[id].decission = random.choices([None, 'w', 's', 'a', 'd'], weights=self.players[id].weights)[0]
         if self.players[id].decission == 'w':
             self.move(id, 0, 1)
         if self.players[id].decission == 's':
@@ -368,11 +383,17 @@ if __name__ == "__main__":
     game1 = game(number_of_players=PLAYERS, verbose=VERBOSE)
     game1 = setup_keys(game1)
 
-    while game1.living:
+    if os.path.isfile(PKL_PATH):
+        with open(PKL_PATH, 'rb') as file:
+            PLAYER_WINNERS = pickle.load(file)
 
+    while game1.living:
+        print(f"Gladiator Count: {len(PLAYER_WINNERS)}")
         if not game1.draw():
             winner = game1.get_best_player()
-            PLAYER_WINERS.append(winner)
+            PLAYER_WINNERS.append(winner)
+            with open(PKL_PATH, 'wb') as file:
+                pickle.dump(PLAYER_WINNERS, file)
             game1 = None
             game1 = game(number_of_players=PLAYERS, verbose=VERBOSE)
             game1 = setup_keys(game1)
