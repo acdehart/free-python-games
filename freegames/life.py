@@ -12,11 +12,11 @@ Exercises
 """
 import pickle
 
-RADIUS = 1
+RADIUS = 2
 PLAYERS = 2
 VERBOSE = False
 PLAYER_WINNERS = []
-PKL_PATH = 'gladiators.pkl'
+PKL_PATH = f'gladiators_r{RADIUS}.pkl'
 
 from threading import Thread
 import beepy as beep
@@ -32,6 +32,9 @@ from freegames import square
 
 x_window = 660
 y_window = 420
+
+x_corner = 1400
+y_corner = 0
 
 x_field = 200
 y_field = x_field
@@ -62,7 +65,7 @@ class player:
             self.color = 'blue'
             self.pos = [-100, -100]
             self.text = [-320, 110]
-            self.weights = [.9, .1, .1, .1, .1]
+            self.weights = [.92, .02, .02, .02, .02]
 
         if id == 2:
             self.color = 'orange'
@@ -70,21 +73,26 @@ class player:
             self.text = [208, 110]
             self.weights = [.2, .2, .2, .2, .2]
 
-    def get_intuition(self):
-        return self.weights
-
     def remember_valhala(self, points, env, env_1):
-        """Convert env to local 1/0 in a list associated with env"""
         """Reinforce (+) moments before scoring points"""
         """Penalize (-) moments before losing points"""
-
-        feature_list = [] # i component when up/down, no i when l/r
-        if RADIUS == 1:
-            for x in range(self.pos[0]-1*cell_size, self.pos[0]+2*cell_size, 10):
-                for y in range(self.pos[1]-1*cell_size, self.pos[1]+2*cell_size, 10):
-                    feature_list.append(int(env_1[(x, y)])*points)
+        feature_list = self.get_memory_list(env_1, points)
+        self.weights = self.get_action_weights(feature_list)
         self.memory[tuple(feature_list)] = self.prev_decission
 
+    def get_memory_list(self, env_1, points):
+        feature_list = []  # i component when up/down, no i when l/r
+        for x in range(self.pos[0] - RADIUS * cell_size, self.pos[0] + (1 + RADIUS) * cell_size, 10):
+            for y in range(self.pos[1] - RADIUS * cell_size, self.pos[1] + (1 + RADIUS) * cell_size, 10):
+                if abs(x) < x_field-1*cell_size and abs(y) < y_field-1*cell_size:
+                    feature_list.append(int(env_1[(x, y)]) * points)
+                else:
+                    feature_list.append(0)
+        return feature_list
+
+    def get_action_weights(self, feature_list):
+        """TODO: Forward Pass in Network"""
+        return self.weights
 
 
 class game:
@@ -95,7 +103,7 @@ class game:
         self.ding = False
         self.num_of_players = number_of_players
         self.step_count = 0
-        setup(x_window, y_window, 1*370, 200)
+        setup(x_window, y_window, x_corner, y_corner)
         hideturtle()
         tracer(False)
         self.players = {}
@@ -225,7 +233,8 @@ class game:
 
         """Agent makes new decision"""
         for id in self.players:
-            self.move_player_random_direction(id)
+            # self.move_player_random_direction(id)
+            self.move_player_informed_direction(id)
 
         if game_over:
             self.living = False
@@ -243,15 +252,23 @@ class game:
             self.randomize_patch(random.choice([-x_garden - 60, 0, x_garden + 60]),
                                  random.choice([-y_garden - 60, 0, y_garden + 60]))
 
-    def move_player_from_runes(self, id):
+    def move_player_informed_direction(self, id):
         """With PLAYER_WINNERS"""
         """Train system of nodes & weights"""
         """Feed new env to agent and get decision"""
+
+        feature_list = self.players[id].get_memory_list(self.cells, 1)
+        self.players[id].weights = self.players[id].get_action_weights(feature_list)
+        self.players[id].decission = random.choices([None, 'w', 's', 'a', 'd'], weights=self.players[id].weights)[0]
+
+        self.move_player_direction(id)
         pass
 
     def move_player_random_direction(self, id):
-        self.players[id].weights = self.players[id].get_intuition()
         self.players[id].decission = random.choices([None, 'w', 's', 'a', 'd'], weights=self.players[id].weights)[0]
+        self.move_player_direction(id)
+
+    def move_player_direction(self, id):
         if self.players[id].decission == 'w':
             self.move(id, 0, 1)
         if self.players[id].decission == 's':
@@ -331,6 +348,7 @@ class game:
                         self.players[id].score += 1
                         self.ding = True
                         self.players[id].remember_valhala(points=1, env=self.cells, env_1=self.prev_cells)
+
 
         if self.verbose and self.ding:
             self.ding = False
