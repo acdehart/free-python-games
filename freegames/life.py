@@ -33,7 +33,7 @@ from freegames import square
 x_window = 660
 y_window = 420
 
-x_corner = 1400
+x_corner = 1350
 y_corner = 0
 
 x_field = 200
@@ -43,6 +43,7 @@ x_garden = 50
 y_garden = x_garden
 
 cell_size = 10
+
 
 def count_wins(color):
     color_wins = 0
@@ -91,7 +92,8 @@ class player:
         return feature_list
 
     def get_action_weights(self, feature_list):
-        """TODO: Forward Pass in Network"""
+        """TODO: Forward Pass in Network and update weights"""
+
         return self.weights
 
 
@@ -149,8 +151,7 @@ class game:
 
     def close(self):
         """Need method to close app"""
-        print("GAME END")
-        # self = None
+        print(f"GAME END | {self.get_best_player().color} with {self.get_best_player().score}")
 
     def inject_glider_down_right(self, x, y):
         self.cells[(x, y + cell_size)] = True
