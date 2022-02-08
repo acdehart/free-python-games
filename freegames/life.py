@@ -12,6 +12,8 @@ Exercises
 """
 import pickle
 
+import numpy as np
+
 RADIUS = 2
 PLAYERS = 2
 VERBOSE = False
@@ -58,8 +60,18 @@ class player:
         self.alive = True
         self.score = 0
         self.lives = 'III'
-        self.decission = None
+        self.options = [None, 'w', 's', 'a', 'd']
+        self.decission = None  # 'w', 's', 'a', 'd'
         self.prev_decission = None
+        self.input_layer = [[0.1]*((RADIUS+3)**2)]*len(self.options)
+        self.input_weights = np.array([[1/len(self.input_layer)]*len(self.input_layer)]*len(self.options))
+        self.h_weights1 = np.array([[1/len(self.input_layer)]*len(self.input_layer)]*len(self.options))
+        self.biases1 = [.3]*len(self.options)
+        self.biases2 = [.6]*len(self.options)
+        self.layer1_output = None
+        self.layer2_output = None
+        self.output_layer = [0]*len(self.options)
+
         self.memory = {} # Key env state # Val prev decision: point change
 
         if id == 1:
@@ -67,6 +79,7 @@ class player:
             self.pos = [-100, -100]
             self.text = [-320, 110]
             self.weights = [.92, .02, .02, .02, .02]
+            self.weights = [1, 0, 0, 0, 0]
 
         if id == 2:
             self.color = 'orange'
@@ -77,24 +90,41 @@ class player:
     def remember_valhala(self, points, env, env_1):
         """Reinforce (+) moments before scoring points"""
         """Penalize (-) moments before losing points"""
-        feature_list = self.get_memory_list(env_1, points)
-        self.weights = self.get_action_weights(feature_list)
-        self.memory[tuple(feature_list)] = self.prev_decission
+        self.get_action_weights(env_1=env_1, points=points)
+        self.memory[tuple(self.input_layer)] = self.prev_decission
 
     def get_memory_list(self, env_1, points):
         feature_list = []  # i component when up/down, no i when l/r
         for x in range(self.pos[0] - RADIUS * cell_size, self.pos[0] + (1 + RADIUS) * cell_size, 10):
+            feature_list.append([])
             for y in range(self.pos[1] - RADIUS * cell_size, self.pos[1] + (1 + RADIUS) * cell_size, 10):
                 if abs(x) < x_field-1*cell_size and abs(y) < y_field-1*cell_size:
-                    feature_list.append(int(env_1[(x, y)]) * points)
+                    feature_list[-1].append(int(env_1[(x, y)]) * points)
                 else:
-                    feature_list.append(0)
-        return feature_list
+                    feature_list[-1].append(0)
+        return feature_list  # row with +/- 1, 0 neuron values for every cell within RADIUS
 
-    def get_action_weights(self, feature_list):
+    def get_action_weights(self, env_1, points):
         """TODO: Forward Pass in Network and update weights"""
+        self.input_layer = self.get_memory_list(env_1, points)
+        self.output_layer = []
 
-        return self.weights
+        # self.output_layer = np.dot(self.input_weights, self.input_layer) + self.input_bias
+
+        self.layer1_output = np.dot(self.input_layer, self.input_weights.T) + self.biases1
+        self.layer2_output = np.dot(self.layer1_output, self.h_weights1.T) + self.biases2
+
+        # for neuron_weights, neuron_bias in zip(self.input_weights, self.input_bias):
+        #     neuron_output = 0
+        #     for n_input, weight in zip(self.input_layer, neuron_weights):
+        #         neuron_output += n_input*weight
+        #
+        #     neuron_output += neuron_bias
+        #     self.output_layer.append(neuron_output)
+
+        # update self.weights
+        pass
+
 
 
 class game:
@@ -239,7 +269,6 @@ class game:
 
         if game_over:
             self.living = False
-            self.close()
             return False
         return True
 
@@ -258,8 +287,7 @@ class game:
         """Train system of nodes & weights"""
         """Feed new env to agent and get decision"""
 
-        feature_list = self.players[id].get_memory_list(self.cells, 1)
-        self.players[id].weights = self.players[id].get_action_weights(feature_list)
+        self.players[id].get_action_weights(env_1=self.cells, points=1)
         self.players[id].decission = random.choices([None, 'w', 's', 'a', 'd'], weights=self.players[id].weights)[0]
 
         self.move_player_direction(id)
@@ -285,14 +313,16 @@ class game:
             if not self.players[1].alive:
                 game_over = True
         else:
-            if not self.players[1].alive and self.players[2].score > self.players[1].score:
+            if not self.player_cells[tuple(self.players[1].pos)] and self.players[2].score > self.players[1].score:
                 game_over = True
-            if not self.players[2].alive and self.players[2].score < self.players[1].score:
+            if not self.player_cells[tuple(self.players[2].pos)] and self.players[2].score < self.players[1].score:
                 game_over = True
             if not self.players[1].alive and not self.players[2].alive:
                 game_over = True
             if not self.player_cells[tuple(self.players[1].pos)] and not self.player_cells[tuple(self.players[2].pos)]:
                 game_over = True
+
+            print(f"Game {game_over} | P1 {self.player_cells[tuple(self.players[1].pos)]} {self.players[1].score} | P2 {self.player_cells[tuple(self.players[2].pos)]} {self.players[2].score} ")
         return game_over
 
     def report_scores(self):
@@ -379,6 +409,7 @@ class game:
                         tkinter.messagebox.showwarning("Game Over!", f"Orange Wins!\nScore {self.players[2].score}")
                     if self.players[1].score == self.players[2].score:
                         tkinter.messagebox.showerror("Game Over!", f"Tie Game!\nScore {self.players[1].score}")
+            self.close()
             return None
 
         ontimer(self.draw(), 100)
