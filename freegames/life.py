@@ -91,7 +91,7 @@ class player:
         """Reinforce (+) moments before scoring points"""
         """Penalize (-) moments before losing points"""
         self.get_action_weights(env_1=env_1, points=points)
-        self.memory[tuple(self.input_layer)] = self.prev_decission
+        self.memory[tuple(self.input_layer[2])] = self.prev_decission
 
     def get_memory_list(self, env_1, points):
         feature_list = []  # i component when up/down, no i when l/r
@@ -433,9 +433,9 @@ if __name__ == "__main__":
     game1 = game(number_of_players=PLAYERS, verbose=VERBOSE)
     game1 = setup_keys(game1)
 
-    if os.path.isfile(PKL_PATH):
-        with open(PKL_PATH, 'rb') as file:
-            PLAYER_WINNERS = pickle.load(file)
+    # if os.path.isfile(PKL_PATH):
+    #     with open(PKL_PATH, 'r') as file:
+    #        PLAYER_WINNERS = pickle.load(file)
 
     while game1.living:
         print(f"Gladiator Count: {len(PLAYER_WINNERS)}")
