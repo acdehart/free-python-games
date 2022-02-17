@@ -12,3 +12,9 @@ sphinx
 tox
 twine
 wheel
+
+setuptools~=56.0.0
+numpy~=1.19.5
+nnfs~=0.5.1
+opencv-python~=4.5.4.60
+future~=0.18.2

@@ -1,3 +1,5 @@
+from zipfile import ZipFile
+import matplotlib.pyplot as plt
 import numpy as np
 import nnfs
 import os
@@ -985,6 +987,7 @@ def load_mnist_dataset(dataset, path):
     y = []
     # For each label folder
     for label in labels:
+        print(".", end='')
         # And for each image in given folder
         for file in os.listdir(os.path.join(path, dataset, label)):
             # Read the image
@@ -997,41 +1000,85 @@ def load_mnist_dataset(dataset, path):
     # Convert the data to proper numpy arrays and return
     return np.array(X), np.array(y).astype('uint8')
 
+
 # MNIST dataset (train + test)
 def create_data_mnist(path):
     # Load both sets separately
     X, y = load_mnist_dataset('train', path)
     X_test, y_test = load_mnist_dataset('test', path)
+
     # And return all the data
     return X, y, X_test, y_test
 
-# Label index to label name relation
-fashion_mnist_labels = {
- 0: 'T-shirt/top',
- 1: 'Trouser',
- 2: 'Pullover',
- 3: 'Dress',
- 4: 'Coat',
- 5: 'Sandal',
- 6: 'Shirt',
- 7: 'Sneaker',
- 8: 'Bag',
- 9: 'Ankle boot'
-}
-# Read an image
-image_data = cv2.imread('pants.png', cv2.IMREAD_GRAYSCALE)
-# Resize to the same size as Fashion MNIST images
-image_data = cv2.resize(image_data, (28, 28))
-# Invert image colors
-image_data = 255 - image_data
-# Reshape and scale pixel data
-image_data = (image_data.reshape(1, -1).astype(np.float32) - 127.5) / 127.5
-# Load the model
-model = Model.load('fashion_mnist.model')
-# Predict on the image
-confidences = model.predict(image_data)
-# Get prediction instead of confidence levels
-predictions = model.output_layer_activation.predictions(confidences)
-# Get label name from label index
-prediction = fashion_mnist_labels[predictions[0]]
-print(prediction)
+
+def get_mnist_data():
+    # Just go to this URL and manually move the data
+    URL = 'https://nnfs.io/datasets/fashion_mnist_images.zip'
+    FILE = 'fashion_mnist_images.zip'
+    FOLDER = 'fashion_mnist_images'
+    import os
+    import urllib
+    import urllib.request
+    if not os.path.isfile(FILE):
+        print(f'Downloading {URL} and saving as {FILE}...')
+        urllib.request.urlretrieve(URL, FILE)
+    print('Unzipping images...')
+    with ZipFile(FILE) as zip_images:
+        zip_images.extractall(FOLDER)
+    print('Done!')
+
+
+def main():
+    global predictions
+    # Label index to label name relation
+    fashion_mnist_labels = {
+        0: 'T-shirt/top',
+        1: 'Trouser',
+        2: 'Pullover',
+        3: 'Dress',
+        4: 'Coat',
+        5: 'Sandal',
+        6: 'Shirt',
+        7: 'Sneaker',
+        8: 'Bag',
+        9: 'Ankle boot'
+    }
+    # Read an image
+    image_data = cv2.imread('pants.png', cv2.IMREAD_GRAYSCALE)
+    # Resize to the same size as Fashion MNIST images
+    image_data = cv2.resize(image_data, (28, 28))
+    # Invert image colors
+    image_data = 255 - image_data
+    # Reshape and scale pixel data
+    image_data = (image_data.reshape(1, -1).astype(np.float32) - 127.5) / 127.5
+    # Load the model
+    model = Model.load('fashion_mnist.model')
+    # Predict on the image
+    confidences = model.predict(image_data)
+    # Get prediction instead of confidence levels
+    predictions = model.output_layer_activation.predictions(confidences)
+    # Get label name from label index
+    prediction = fashion_mnist_labels[predictions[0]]
+    print(prediction)
+
+
+if __name__ == '__main__':
+
+    # get_mnist_data()
+
+    # main()
+
+    np.set_printoptions(linewidth=200)
+    # image_data = cv2.imread('fashion_mnist_images/train/4/0011.png', cv2.IMREAD_UNCHANGED)
+    image_data = cv2.imread('fashion_mnist_images/train/7/0002.png', cv2.IMREAD_UNCHANGED)
+    print(image_data)
+    plt.imshow(image_data, cmap='gray')
+    plt.show()
+
+
+    # print("Loading Data...")
+    # X, y, X_test, y_test = create_data_mnist('fashion_mnist_images')
+    # print("Data Loaded!")
+
+
+
