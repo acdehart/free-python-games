@@ -8,6 +8,7 @@ import pickle
 import copy
 nnfs.init()
 
+
 # Dense layer
 class Layer_Dense:
     # Layer initialization
@@ -67,6 +68,7 @@ class Layer_Dense:
         self.weights = weights
         self.biases = biases
 
+
 # Dropout
 class Layer_Dropout:
 
@@ -96,11 +98,13 @@ class Layer_Dropout:
         # Gradient on values
         self.dinputs = dvalues * self.binary_mask
 
+
 # Input "layer"
 class Layer_Input:
     # Forward pass
     def forward(self, inputs, training):
         self.output = inputs
+
 
 # ReLU activation
 class Activation_ReLU:
@@ -123,6 +127,7 @@ class Activation_ReLU:
 
     def predictions(self, outputs):
         return outputs
+
 
 # Softmax activation
 class Activation_Softmax:
@@ -156,6 +161,7 @@ class Activation_Softmax:
     def predictions(self, outputs):
         return np.argmax(outputs, axis=1)
 
+
 # Sigmoid activation
 class Activation_Sigmoid:
     # Forward pass
@@ -174,6 +180,7 @@ class Activation_Sigmoid:
     def predictions(self, outputs):
         return (outputs > 0.5) * 1
 
+
 # Linear activation
 class Activation_Linear:
 
@@ -191,6 +198,7 @@ class Activation_Linear:
      # Calculate predictions for outputs
      def predictions(self, outputs):
          return outputs
+
 
 # SGD optimizer
 class Optimizer_SGD:
@@ -249,6 +257,7 @@ class Optimizer_SGD:
     def post_update_params(self):
         self.iterations += 1
 
+
 # Adagrad optimizer
 class Optimizer_Adagrad:
     # Initialize optimizer - set settings
@@ -284,6 +293,7 @@ class Optimizer_Adagrad:
     # Call once after any parameter updates
     def post_update_params(self):
         self.iterations += 1
+
 
 # RMSprop optimizer
 class Optimizer_RMSprop:
@@ -321,6 +331,7 @@ class Optimizer_RMSprop:
     # Call once after any parameter updates
     def post_update_params(self):
         self.iterations += 1
+
 
 # Adam optimizer
 class Optimizer_Adam:
@@ -373,6 +384,7 @@ class Optimizer_Adam:
     # Call once after any parameter updates
     def post_update_params(self):
         self.iterations += 1
+
 
 # Common loss class
 class Loss:
@@ -445,6 +457,7 @@ class Loss:
         self.accumulated_sum = 0
         self.accumulated_count = 0
 
+
 # Cross-entropy loss
 class Loss_CategoricalCrossentropy(Loss):
     # Forward pass
@@ -487,6 +500,7 @@ class Loss_CategoricalCrossentropy(Loss):
         self.dinputs = -y_true / dvalues
         # Normalize gradient
         self.dinputs = self.dinputs / samples
+
 
 # Softmax classifier - combined Softmax activation
 # and cross-entropy loss for faster backward step
@@ -537,6 +551,7 @@ class Loss_BinaryCrossentropy(Loss):
         # Normalize gradient
         self.dinputs = self.dinputs / samples
 
+
 # Mean Squared Error loss
 class Loss_MeanSquaredError(Loss): # L2 loss
     # Forward pass
@@ -558,6 +573,7 @@ class Loss_MeanSquaredError(Loss): # L2 loss
         # Normalize gradient
         self.dinputs = self.dinputs / samples
 
+
 # Mean Absolute Error loss
 class Loss_MeanAbsoluteError(Loss): # L1 loss
     def forward(self, y_pred, y_true):
@@ -577,6 +593,7 @@ class Loss_MeanAbsoluteError(Loss): # L1 loss
         self.dinputs = np.sign(y_true - dvalues) / outputs
         # Normalize gradient
         self.dinputs = self.dinputs / samples
+
 
 # Common accuracy class
 class Accuracy:
@@ -605,6 +622,7 @@ class Accuracy:
         self.accumulated_sum = 0
         self.accumulated_count = 0
 
+
 # Accuracy calculation for classification model
 class Accuracy_Categorical(Accuracy):
     def __init__(self, *, binary=False):
@@ -621,6 +639,7 @@ class Accuracy_Categorical(Accuracy):
             y = np.argmax(y, axis=1)
         return predictions == y
 
+
 # Accuracy calculation for regression model
 class Accuracy_Regression(Accuracy):
     def __init__(self):
@@ -636,6 +655,7 @@ class Accuracy_Regression(Accuracy):
     # Compares predictions to the ground truth values
     def compare(self, predictions, y):
         return np.absolute(predictions - y) < self.precision
+
 
 # Model class
 class Model:
@@ -782,11 +802,11 @@ class Model:
 
         # If there is the validation data
         if validation_data is not None:
-        # Evaluate the model:
+            # Evaluate the model:
             self.evaluate(*validation_data, batch_size=batch_size)
 
     # Evaluates the model using passed-in dataset
-    def evaluate(self, X_val, y_val, *, batch_size=None):
+    def evaluate(self, X_val, y_val, *, batch_size=None, desc=''):
         # Default value if batch size is not being set
         validation_steps = 1
         # Calculate number of steps
@@ -830,7 +850,7 @@ class Model:
         validation_accuracy = self.accuracy.calculate_accumulated()
 
         # Print a summary
-        print(f'validation, ' +
+        print(f'{desc} validation, ' +
         f'acc: {validation_accuracy:.3f}, ' +
         f'loss: {validation_loss:.3f}')
 
@@ -841,12 +861,11 @@ class Model:
         # Calculate number of steps
         if batch_size is not None:
             prediction_steps = len(X) // batch_size
-
-        # Dividing rounds down. If there are some remaining
-        # data but not a full batch, this won't include it
-        # Add `1` to include this not full batch
-        if prediction_steps * batch_size < len(X):
-            prediction_steps += 1
+            # Dividing rounds down. If there are some remaining
+            # data but not a full batch, this won't include it
+            # Add `1` to include this not full batch
+            if prediction_steps * batch_size < len(X):
+                prediction_steps += 1
         # Model outputs
         output = []
 
@@ -978,10 +997,13 @@ class Model:
         # Return a model
         return model
 
+
 # Loads a MNIST dataset
 def load_mnist_dataset(dataset, path):
     # Scan all the directories and create a list of labels
     labels = os.listdir(os.path.join(path, dataset))
+    # labels = ['0']
+
     # Create lists for samples and labels
     X = []
     y = []
@@ -990,13 +1012,13 @@ def load_mnist_dataset(dataset, path):
         print(".", end='')
         # And for each image in given folder
         for file in os.listdir(os.path.join(path, dataset, label)):
-            # Read the image
-            image = cv2.imread(
-                os.path.join(path, dataset, label, file),
-                cv2.IMREAD_UNCHANGED)
-            # And append it and a label to the lists
-            X.append(image)
-            y.append(label)
+            if file.endswith(".png"):
+                # Read the image
+                image = cv2.imread(os.path.join(path, dataset, label, file), cv2.IMREAD_UNCHANGED)
+                # And append it and a label to the lists
+                X.append(image)
+                y.append(label)
+
     # Convert the data to proper numpy arrays and return
     return np.array(X), np.array(y).astype('uint8')
 
@@ -1007,12 +1029,20 @@ def create_data_mnist(path):
     X, y = load_mnist_dataset('train', path)
     X_test, y_test = load_mnist_dataset('test', path)
 
+    # Preprocess Data
+    X = (X.astype(np.float32) - 127.5) / 127.5
+    X_test = (X_test.astype(np.float32) - 127.5) / 127.5
+
+    X = X.reshape(X.shape[0], -1)
+    X_test = X_test.reshape(X_test.shape[0], -1)
+
     # And return all the data
     return X, y, X_test, y_test
 
 
 def get_mnist_data():
-    # Just go to this URL and manually move the data
+    # This doesn't quite work
+    # Just go to this URL and manually move the data into a local folder fashion_mnist_images
     URL = 'https://nnfs.io/datasets/fashion_mnist_images.zip'
     FILE = 'fashion_mnist_images.zip'
     FOLDER = 'fashion_mnist_images'
@@ -1043,10 +1073,18 @@ def main():
         8: 'Bag',
         9: 'Ankle boot'
     }
+
     # Read an image
-    image_data = cv2.imread('pants.png', cv2.IMREAD_GRAYSCALE)
+    image_data = cv2.imread('fashion_mnist_images/validate/tshirt.png', cv2.IMREAD_GRAYSCALE)
+    # image_data = cv2.imread('fashion_mnist_images/validate/shoe.png', cv2.IMREAD_GRAYSCALE)
+    # image_data = cv2.imread('fashion_mnist_images/validate/square.png', cv2.IMREAD_GRAYSCALE)
+    # image_data = cv2.imread('fashion_mnist_images/validate/pants.png', cv2.IMREAD_GRAYSCALE)
+    # image_data = cv2.imread('fashion_mnist_images/validate/sandle.jpg', cv2.IMREAD_GRAYSCALE)
+
     # Resize to the same size as Fashion MNIST images
     image_data = cv2.resize(image_data, (28, 28))
+    plt.imshow(image_data, cmap='gray')
+
     # Invert image colors
     image_data = 255 - image_data
     # Reshape and scale pixel data
@@ -1059,26 +1097,86 @@ def main():
     predictions = model.output_layer_activation.predictions(confidences)
     # Get label name from label index
     prediction = fashion_mnist_labels[predictions[0]]
-    print(prediction)
+    for i, label in fashion_mnist_labels.items():
+        special = ''
+        if i == predictions[0]:
+            special = '<---'
+        print(f"{round(100*confidences[0][i],2)}% {label} {special}")
+
+    # print(f"{round(100*confidences[0][predictions[0]],2)}% {prediction}")
+    plt.show()
+
+
+def create_and_save_ai():
+    X, y, X_test, y_test = create_data_mnist('fashion_mnist_images')
+    keys = np.array(range(X.shape[0]))
+    np.random.shuffle(keys)
+    X = X[keys]
+    y = y[keys]
+    # Instantiate the model
+    model = Model()
+    # Add layers
+    neurons = 128
+    model.add(Layer_Dense(X.shape[1], neurons))
+    model.add(Activation_ReLU())
+    model.add(Layer_Dense(neurons, neurons))
+    model.add(Activation_ReLU())
+    model.add(Layer_Dense(neurons, 10))
+    model.add(Activation_Softmax())
+    # Set loss, optimizer and accuracy objects
+    model.set(loss=Loss_CategoricalCrossentropy(),
+              optimizer=Optimizer_Adam(decay=1e-3),
+              accuracy=Accuracy_Categorical()
+              )
+    model.finalize()
+    # model = model.load('fashion_mnist.model')
+    model.train(X, y, validation_data=(X_test, y_test),
+                epochs=10, batch_size=128, print_every=100)
+    model.evaluate(X, y, desc='Training')
+    model.evaluate(X_test, y_test, desc='Testing')
+    model.save_parameters('fashion_mnist.parms')
+    model.save('fashion_mnist.model')
 
 
 if __name__ == '__main__':
 
     # get_mnist_data()
 
-    # main()
+    # create_and_save_ai()
 
-    np.set_printoptions(linewidth=200)
-    # image_data = cv2.imread('fashion_mnist_images/train/4/0011.png', cv2.IMREAD_UNCHANGED)
-    image_data = cv2.imread('fashion_mnist_images/train/7/0002.png', cv2.IMREAD_UNCHANGED)
-    print(image_data)
-    plt.imshow(image_data, cmap='gray')
-    plt.show()
+    main()
 
+    # Retrieve and print parameters
+    # parameters = model.get_parameters()
 
-    # print("Loading Data...")
-    # X, y, X_test, y_test = create_data_mnist('fashion_mnist_images')
-    # print("Data Loaded!")
+    # New model
+    # # Instantiate the model
+    # model = Model()
+    # # Add layers
+    # model.add(Layer_Dense(X.shape[1], 128))
+    # model.add(Activation_ReLU())
+    # model.add(Layer_Dense(128, 128))
+    # model.add(Activation_ReLU())
+    # model.add(Layer_Dense(128, 10))
+    # model.add(Activation_Softmax())
+    # # Set loss and accuracy objects
+    # # We do not set optimizer object this time - there's no need to do it
+    # # as we won't train the model
+    # model.set(
+    #     loss=Loss_CategoricalCrossentropy(),
+    #     accuracy=Accuracy_Categorical()
+    # )
+    # # Finalize the model
+    # model.finalize()
 
+    # Set model with parameters instead of training it
+    # model.set_parameters(parameters)
+    # model.load_parameters('fashion_mnist.params')
 
+    # Evaluate the model
+    # model.evaluate(X, y, desc='Final Training')
+    # model.evaluate(X_test, y_test, desc='Final Testing')
+
+    # model.save_parameters('fashion_mnist.parms')
+    # model.save('fashion_mnist.model')
 
